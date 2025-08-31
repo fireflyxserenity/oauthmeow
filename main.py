@@ -6,6 +6,7 @@ Handles Twitch OAuth and communicates with the bot via file writing
 import os
 import requests
 import logging
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -18,6 +19,9 @@ logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 CORS(app)
+
+# Store pending channel joins in memory (in production, use a database)
+pending_channels = []
 
 # Environment variables
 TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID', 'i8doijnvc4wkt0q5et2fb7ucb7mng7')
@@ -39,6 +43,30 @@ def health_check():
         'redirect_uri': 'https://fireflydesigns.me/twitch.html',
         'version': '2.0-updated'
     })
+
+@app.route('/api/pending-channels', methods=['GET'])
+def get_pending_channels():
+    """Bot can poll this endpoint to get channels to join"""
+    global pending_channels
+    channels = pending_channels.copy()
+    pending_channels.clear()  # Clear after sending
+    return jsonify({'channels': channels})
+
+@app.route('/api/add-channel', methods=['POST'])
+def add_channel_manually():
+    """Manual endpoint to add channels"""
+    data = request.get_json()
+    if not data or 'channel' not in data:
+        return jsonify({'success': False, 'error': 'Channel name is required'}), 400
+    
+    global pending_channels
+    pending_channels.append({
+        'channel': data['channel'],
+        'display_name': data.get('display_name', data['channel']),
+        'timestamp': data.get('timestamp', 'manual')
+    })
+    
+    return jsonify({'success': True, 'message': f'Channel {data["channel"]} added to queue'})
 
 @app.route('/api/authorize-bot', methods=['POST'])
 def authorize_bot():
@@ -87,9 +115,17 @@ def authorize_bot():
         
         logging.info(f'User data: {display_name} ({channel_name})')
 
-        # Step 3: Notify the bot via webhook or file
-        # For now, we'll use a simple HTTP request to notify the bot
-        # You can replace this with your preferred communication method
+        # Step 3: Notify the bot via webhook or queue
+        # Add the channel to the pending queue for the bot to pick up
+        global pending_channels
+        pending_channels.append({
+            'channel': channel_name,
+            'display_name': display_name,
+            'user_id': user_data['id'],
+            'timestamp': str(int(time.time()))
+        })
+        
+        logging.info(f'Channel {channel_name} added to pending queue')
         
         try:
             # Try to notify the bot directly if it has a webhook endpoint
@@ -101,9 +137,11 @@ def authorize_bot():
                     'display_name': display_name
                 }, timeout=5)
                 logging.info(f'Bot notification sent: {notify_response.status_code}')
+            else:
+                logging.info(f'Channel queued for bot polling: {channel_name}')
         except Exception as e:
             logging.warning(f'Could not notify bot directly: {e}')
-            # This is okay - the bot can still pick up channels via file watching
+            # Channel is still in the queue for polling
 
         return jsonify({
             'success': True,
