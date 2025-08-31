@@ -33,7 +33,12 @@ def home():
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({'status': 'OK', 'message': 'Meow Bot Auth API is running'})
+    return jsonify({
+        'status': 'OK', 
+        'message': 'Meow Bot Auth API is running',
+        'redirect_uri': 'https://fireflydesigns.me/twitch.html',
+        'version': '2.0-updated'
+    })
 
 @app.route('/api/authorize-bot', methods=['POST'])
 def authorize_bot():
@@ -46,13 +51,19 @@ def authorize_bot():
         logging.info(f'Received authorization code: {auth_code[:10]}...')
 
         # Step 1: Exchange code for access token
-        token_response = requests.post('https://id.twitch.tv/oauth2/token', data={
+        redirect_uri = 'https://fireflydesigns.me/twitch.html'
+        logging.info(f'Using redirect URI: {redirect_uri}')
+        
+        token_data_payload = {
             'client_id': TWITCH_CLIENT_ID,
             'client_secret': TWITCH_CLIENT_SECRET,
             'code': auth_code,
             'grant_type': 'authorization_code',
-            'redirect_uri': 'https://fireflydesigns.me/twitch-auth.html'
-        })
+            'redirect_uri': redirect_uri
+        }
+        logging.info(f'Token request payload: {token_data_payload}')
+        
+        token_response = requests.post('https://id.twitch.tv/oauth2/token', data=token_data_payload)
 
         if token_response.status_code != 200:
             raise Exception(f"Token exchange failed: {token_response.text}")
