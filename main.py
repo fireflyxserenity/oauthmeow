@@ -48,8 +48,10 @@ def health_check():
 def get_pending_channels():
     """Bot can poll this endpoint to get channels to join"""
     global pending_channels
+    logging.info(f'Bot polling for channels. Current queue size: {len(pending_channels)}')
     channels = pending_channels.copy()
     pending_channels.clear()  # Clear after sending
+    logging.info(f'Sending {len(channels)} channels to bot: {channels}')
     return jsonify({'channels': channels})
 
 @app.route('/api/add-channel', methods=['POST'])
@@ -117,6 +119,7 @@ def authorize_bot():
 
         # Step 3: Notify the bot via webhook or queue
         # Add the channel to the pending queue for the bot to pick up
+        logging.info(f'About to add channel {channel_name} to pending queue...')
         global pending_channels
         pending_channels.append({
             'channel': channel_name,
@@ -125,7 +128,8 @@ def authorize_bot():
             'timestamp': str(int(time.time()))
         })
         
-        logging.info(f'Channel {channel_name} added to pending queue')
+        logging.info(f'Channel {channel_name} added to pending queue. Queue size: {len(pending_channels)}')
+        logging.info(f'Current pending channels: {pending_channels}')
         
         try:
             # Try to notify the bot directly if it has a webhook endpoint
