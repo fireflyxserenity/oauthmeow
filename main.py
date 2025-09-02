@@ -20,8 +20,9 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 CORS(app)
 
-# Store pending channel joins in memory (in production, use a database)
+# Store pending channel joins with timestamps for better reliability
 pending_channels = []
+processed_channels = []  # Keep track of what we've sent
 
 # Environment variables
 TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID', 'i8doijnvc4wkt0q5et2fb7ucb7mng7')
@@ -47,12 +48,65 @@ def health_check():
 @app.route('/api/pending-channels', methods=['GET'])
 def get_pending_channels():
     """Bot can poll this endpoint to get channels to join"""
-    global pending_channels
+    global pending_channels, processed_channels
+    
+    current_time = time.time()
     logging.info(f'Bot polling for channels. Current queue size: {len(pending_channels)}')
-    channels = pending_channels.copy()
-    pending_channels.clear()  # Clear after sending
-    logging.info(f'Sending {len(channels)} channels to bot: {channels}')
-    return jsonify({'channels': channels})
+    
+    # Only send channels that haven't been processed recently
+    channels_to_send = []
+    remaining_channels = []
+    
+    for channel_info in pending_channels:
+        channel_age = current_time - float(channel_info.get('timestamp', 0))
+        
+        # Keep channels in queue for 5 minutes to allow multiple poll attempts
+        if channel_age < 300:  # 5 minutes
+            channels_to_send.append(channel_info)
+            # Add to processed list to avoid sending duplicates
+            if channel_info['channel'] not in [c.get('channel') for c in processed_channels]:
+                processed_channels.append({
+                    'channel': channel_info['channel'],
+                    'processed_time': current_time
+                })
+        else:
+            # Remove old channels after 5 minutes
+            logging.warning(f"Removing old channel from queue: {channel_info['channel']}")
+    
+    # Clean up processed channels older than 1 hour
+    processed_channels = [c for c in processed_channels if (current_time - c['processed_time']) < 3600]
+    
+    # Only keep channels newer than 5 minutes
+    pending_channels = [c for c in pending_channels if (current_time - float(c.get('timestamp', 0))) < 300]
+    
+    logging.info(f'Sending {len(channels_to_send)} channels to bot: {[c["channel"] for c in channels_to_send]}')
+    logging.info(f'Keeping {len(pending_channels)} channels in queue for retry')
+    
+    return jsonify({'channels': channels_to_send})
+
+@app.route('/api/queue-status', methods=['GET'])
+def queue_status():
+    """Check current queue status"""
+    global pending_channels, processed_channels
+    current_time = time.time()
+    
+    # Format pending channels with age
+    pending_with_age = []
+    for channel in pending_channels:
+        age = current_time - float(channel.get('timestamp', 0))
+        pending_with_age.append({
+            'channel': channel['channel'],
+            'display_name': channel.get('display_name', ''),
+            'age_seconds': int(age),
+            'age_minutes': round(age / 60, 1)
+        })
+    
+    return jsonify({
+        'pending_channels': pending_with_age,
+        'pending_count': len(pending_channels),
+        'processed_recently': len(processed_channels),
+        'server_time': current_time
+    })
 
 @app.route('/api/add-channel', methods=['POST'])
 def add_channel_manually():
