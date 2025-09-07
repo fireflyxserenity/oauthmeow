@@ -24,9 +24,9 @@ CORS(app)
 pending_channels = []
 processed_channels = []  # Keep track of what we've sent
 
-# Environment variables
+# Environment variables - temporary hardcoded values until Railway env vars are fixed
 TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID', 'i8doijnvc4wkt0q5et2fb7ucb7mng7')
-TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
+TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET', 'mzrqtdjh4hi6z4vhfvqepd1zlzaybt')
 
 # Log startup info (without exposing secrets)
 logging.info(f"Starting OAuth server...")
@@ -50,6 +50,19 @@ def health_check():
         'message': 'Meow Bot Auth API is running',
         'redirect_uri': 'https://fireflydesigns.me/twitch.html',
         'version': '2.0-updated'
+    })
+
+@app.route('/api/debug', methods=['GET'])
+def debug_info():
+    """Debug endpoint to check environment variables (without exposing secrets)"""
+    return jsonify({
+        'client_id': TWITCH_CLIENT_ID,
+        'client_secret_configured': bool(TWITCH_CLIENT_SECRET),
+        'client_secret_length': len(TWITCH_CLIENT_SECRET) if TWITCH_CLIENT_SECRET else 0,
+        'environment_variables': {
+            'TWITCH_CLIENT_ID': bool(os.getenv('TWITCH_CLIENT_ID')),
+            'TWITCH_CLIENT_SECRET': bool(os.getenv('TWITCH_CLIENT_SECRET'))
+        }
     })
 
 @app.route('/api/pending-channels', methods=['GET'])

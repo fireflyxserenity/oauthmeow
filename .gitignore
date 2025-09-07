@@ -1,0 +1,22 @@
+# Railway OAuth Server - Environment files should not be committed
+# Railway uses dashboard environment variables instead
+
+.env
+.env.local
+.env.production
+.env.staging
+
+# Dependencies
+node_modules/
+__pycache__/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
