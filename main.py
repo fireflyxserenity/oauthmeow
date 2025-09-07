@@ -40,7 +40,7 @@ def home():
     return jsonify({
         'status': 'OK',
         'message': 'Meow Bot OAuth Server',
-        'version': '1.0'
+        'version': '1.1-fix-deployed'
     })
 
 @app.route('/api/health', methods=['GET'])
