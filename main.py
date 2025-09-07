@@ -28,6 +28,13 @@ processed_channels = []  # Keep track of what we've sent
 TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID', 'i8doijnvc4wkt0q5et2fb7ucb7mng7')
 TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
 
+# Log startup info (without exposing secrets)
+logging.info(f"Starting OAuth server...")
+logging.info(f"Client ID: {TWITCH_CLIENT_ID}")
+logging.info(f"Client Secret configured: {'Yes' if TWITCH_CLIENT_SECRET else 'No'}")
+if not TWITCH_CLIENT_SECRET:
+    logging.error("TWITCH_CLIENT_SECRET not found in environment variables!")
+
 @app.route('/')
 def home():
     return jsonify({
@@ -218,4 +225,23 @@ def authorize_bot():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+    
+    # Enhanced startup logging
+    logging.info("=" * 50)
+    logging.info("🚀 RAILWAY OAUTH SERVER STARTING UP")
+    logging.info("=" * 50)
+    logging.info(f"Port: {port}")
+    logging.info(f"Host: 0.0.0.0")
+    logging.info(f"Client ID: {TWITCH_CLIENT_ID}")
+    logging.info(f"Client Secret: {'✅ CONFIGURED' if TWITCH_CLIENT_SECRET else '❌ MISSING'}")
+    
+    if not TWITCH_CLIENT_SECRET:
+        logging.error("🔥 CRITICAL ERROR: TWITCH_CLIENT_SECRET not found!")
+        logging.error("Check Railway environment variables in dashboard")
+    else:
+        logging.info("✅ All environment variables configured correctly")
+    
+    logging.info("🌐 Starting Flask server...")
+    logging.info("=" * 50)
+    
     app.run(host='0.0.0.0', port=port)
