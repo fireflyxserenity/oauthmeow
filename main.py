@@ -147,8 +147,13 @@ def add_channel_manually():
 @app.route('/api/authorize-bot', methods=['POST'])
 def authorize_bot():
     try:
+        logging.info('=== OAUTH REQUEST RECEIVED ===')
+        logging.info(f'Client ID: {TWITCH_CLIENT_ID}')
+        logging.info(f'Client Secret configured: {bool(TWITCH_CLIENT_SECRET)}')
+        
         data = request.get_json()
         if not data or 'code' not in data:
+            logging.error('No authorization code in request')
             return jsonify({'success': False, 'error': 'Authorization code is required'}), 400
 
         auth_code = data['code']
@@ -229,7 +234,10 @@ def authorize_bot():
         })
 
     except Exception as error:
-        logging.error(f'Authorization error: {error}')
+        logging.error(f'=== OAUTH ERROR ===')
+        logging.error(f'Error: {str(error)}')
+        logging.error(f'Error type: {type(error).__name__}')
+        
         return jsonify({
             'success': False,
             'error': 'Failed to process authorization',
