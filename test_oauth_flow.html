@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test OAuth Flow</title>
+</head>
+<body>
+    <h1>Test OAuth Flow</h1>
+    <button onclick="testOAuth()">Test OAuth Server</button>
+    <div id="result"></div>
+
+    <script>
+        async function testOAuth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test 1: Health check
+                const healthResponse = await fetch('https://oauthmeow-production.up.railway.app/api/health');
+                const healthData = await healthResponse.json();
+                
+                resultDiv.innerHTML += `<p>✅ Health Check: ${JSON.stringify(healthData)}</p>`;
+                
+                // Test 2: Check pending channels
+                const pendingResponse = await fetch('https://oauthmeow-production.up.railway.app/api/pending-channels');
+                const pendingData = await pendingResponse.json();
+                
+                resultDiv.innerHTML += `<p>✅ Pending Channels: ${JSON.stringify(pendingData)}</p>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

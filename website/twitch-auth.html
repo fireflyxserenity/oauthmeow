@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Bot Authorization - Meow Bot</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			margin: 0;
+			padding: 0;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.container {
+			background: white;
+			padding: 40px;
+			border-radius: 20px;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+			text-align: center;
+			max-width: 500px;
+		}
+		.loading {
+			color: #9146ff;
+		}
+		.success {
+			color: #28a745;
+		}
+		.error {
+			color: #dc3545;
+		}
+		.spinner {
+			border: 4px solid #f3f3f3;
+			border-top: 4px solid #9146ff;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			animation: spin 1s linear infinite;
+			margin: 20px auto;
+		}
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>🐱 Meow Bot Authorization</h1>
+		<div id="status">
+			<div class="spinner"></div>
+			<p class="loading">Setting up your bot...</p>
+		</div>
+	</div>
+
+	<script>
+		// Get authorization code from URL
+		const urlParams = new URLSearchParams(window.location.search);
+		const code = urlParams.get('code');
+		const error = urlParams.get('error');
+
+		const statusDiv = document.getElementById('status');
+
+		if (error) {
+			statusDiv.innerHTML = `
+				<h2 class="error">❌ Authorization Failed</h2>
+				<p>Error: ${error}</p>
+				<p>Please try again or contact support.</p>
+			`;
+		} else if (code) {
+			// Add debug logging
+			console.log('Authorization code received:', code);
+			console.log('Attempting to contact Railway server...');
+			
+			// Send authorization code to Railway OAuth server
+			fetch('https://oauthmeow-production.up.railway.app/api/authorize-bot', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					code: code
+				})
+			})
+			.then(response => {
+				console.log('Response status:', response.status);
+				console.log('Response headers:', response.headers);
+				return response.json();
+			})
+			.then(data => {
+				console.log('Response data:', data);
+				if (data.success) {
+					statusDiv.innerHTML = `
+						<h2 class="success">✅ Success!</h2>
+						<p>Meow Bot has been added to <strong>${data.channel}</strong>!</p>
+						<p>The bot is now counting meows in your chat. Try typing "meow" to test it!</p>
+						<p>Use <strong>!meowstats</strong> to see your meow count.</p>
+					`;
+				} else {
+					throw new Error(data.error || 'Unknown error occurred');
+				}
+			})
+			.catch(error => {
+				console.error('Detailed error:', error);
+				statusDiv.innerHTML = `
+					<h2 class="error">❌ Setup Failed</h2>
+					<p>There was an error setting up the bot: ${error.message}</p>
+					<p>Check the browser console for more details.</p>
+					<p>Please try again or contact support.</p>
+				`;
+			});
+		} else {
+			statusDiv.innerHTML = `
+				<h2 class="error">❌ No Authorization Code</h2>
+				<p>No authorization code was received. Please try again.</p>
+			`;
+		}
+	</script>
+</body>
+</html>

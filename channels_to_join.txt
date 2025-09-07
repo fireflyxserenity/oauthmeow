@@ -1,0 +1,2 @@
+testchannel1
+testchannel2
