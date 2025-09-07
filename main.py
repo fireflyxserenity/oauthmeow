@@ -24,9 +24,13 @@ CORS(app)
 pending_channels = []
 processed_channels = []  # Keep track of what we've sent
 
-# Environment variables - temporary hardcoded values until Railway env vars are fixed
+# Environment variables - Railway environment variables take priority
 TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID', 'i8doijnvc4wkt0q5et2fb7ucb7mng7')
-TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET', 'mzrqtdjh4hi6z4vhfvqepd1zlzaybt')
+TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
+
+# Fallback only if Railway env var is not set
+if not TWITCH_CLIENT_SECRET:
+    TWITCH_CLIENT_SECRET = 'mzrqtdjh4hi6z4vhfvqepd1zlzaybt'  # Old fallback
 
 # Log startup info (without exposing secrets)
 logging.info(f"Starting OAuth server...")
