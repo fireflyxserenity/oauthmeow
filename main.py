@@ -225,4 +225,23 @@ def authorize_bot():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+    
+    # Enhanced startup logging
+    logging.info("=" * 50)
+    logging.info("🚀 RAILWAY OAUTH SERVER STARTING UP")
+    logging.info("=" * 50)
+    logging.info(f"Port: {port}")
+    logging.info(f"Host: 0.0.0.0")
+    logging.info(f"Client ID: {TWITCH_CLIENT_ID}")
+    logging.info(f"Client Secret: {'✅ CONFIGURED' if TWITCH_CLIENT_SECRET else '❌ MISSING'}")
+    
+    if not TWITCH_CLIENT_SECRET:
+        logging.error("🔥 CRITICAL ERROR: TWITCH_CLIENT_SECRET not found!")
+        logging.error("Check Railway environment variables in dashboard")
+    else:
+        logging.info("✅ All environment variables configured correctly")
+    
+    logging.info("🌐 Starting Flask server...")
+    logging.info("=" * 50)
+    
     app.run(host='0.0.0.0', port=port)
